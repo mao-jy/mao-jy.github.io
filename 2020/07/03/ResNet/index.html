@@ -1,0 +1,194 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ResNet | Jeff_M</title><meta name="description" content="概述 AlexNet将卷积神经网络带入CV领域，VGG和GoogLeNet致力于加深卷积神经网络来提升模型的表现力，而当网络达到一定深度后，研究者们发现一味地加深并不能继续提升效果，反而会使得模型收敛困难，而且表现并不如浅层网络。下图是在CIFAR-10上分别训练20层和56层卷积神经网络地结果，无论在训练集还是测试集，更深的56层反而比20层表现更差，我们称之为网络退化，ResNet主要是为了"><meta name="keywords" content="Deep Learning,CNN,CNN五大经典模型"><meta name="author" content="Jeff_M"><meta name="copyright" content="Jeff_M"><meta name="format-detection" content="telephone=no"><link rel="shortcut icon" href="/img/favicon.jpg"><meta http-equiv="Cache-Control" content="no-transform"><meta http-equiv="Cache-Control" content="no-siteapp"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="dns-prefetch" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="https://hm.baidu.com"/><link rel="dns-prefetch" href="https://hm.baidu.com"/><link rel="preconnect" href="https://fonts.googleapis.com" crossorigin="crossorigin"/><link rel="dns-prefetch" href="https://fonts.googleapis.com"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="dns-prefetch" href="//busuanzi.ibruce.info"/><meta name="baidu-site-verification" content="AoyFE4i7Ib"/><meta name="twitter:card" content="summary"><meta name="twitter:title" content="ResNet"><meta name="twitter:description" content="概述 AlexNet将卷积神经网络带入CV领域，VGG和GoogLeNet致力于加深卷积神经网络来提升模型的表现力，而当网络达到一定深度后，研究者们发现一味地加深并不能继续提升效果，反而会使得模型收敛困难，而且表现并不如浅层网络。下图是在CIFAR-10上分别训练20层和56层卷积神经网络地结果，无论在训练集还是测试集，更深的56层反而比20层表现更差，我们称之为网络退化，ResNet主要是为了"><meta name="twitter:image" content="http://mao-jy.github.io/Shortcut_Connection.png"><meta property="og:type" content="article"><meta property="og:title" content="ResNet"><meta property="og:url" content="http://mao-jy.github.io/2020/07/03/ResNet/"><meta property="og:site_name" content="Jeff_M"><meta property="og:description" content="概述 AlexNet将卷积神经网络带入CV领域，VGG和GoogLeNet致力于加深卷积神经网络来提升模型的表现力，而当网络达到一定深度后，研究者们发现一味地加深并不能继续提升效果，反而会使得模型收敛困难，而且表现并不如浅层网络。下图是在CIFAR-10上分别训练20层和56层卷积神经网络地结果，无论在训练集还是测试集，更深的56层反而比20层表现更差，我们称之为网络退化，ResNet主要是为了"><meta property="og:image" content="http://mao-jy.github.io/Shortcut_Connection.png"><meta property="article:published_time" content="2020-07-03T12:20:45.000Z"><meta property="article:modified_time" content="2020-07-04T13:36:23.323Z"><script src="https://cdn.jsdelivr.net/npm/js-cookie/dist/js.cookie.min.js"></script><script>var autoChangeMode = 'false'
+var t = Cookies.get("theme")
+if (autoChangeMode == '1'){
+  var isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches
+  var isLightMode = window.matchMedia("(prefers-color-scheme: light)").matches
+  var isNotSpecified = window.matchMedia("(prefers-color-scheme: no-preference)").matches
+  var hasNoSupport = !isDarkMode && !isLightMode && !isNotSpecified
+
+  if (t === undefined){
+    if (isLightMode) activateLightMode()
+    else if (isDarkMode) activateDarkMode()
+    else if (isNotSpecified || hasNoSupport){
+      console.log('You specified no preference for a color scheme or your browser does not support it. I Schedule dark mode during night time.')
+      var now = new Date()
+      var hour = now.getHours()
+      var isNight = hour < 6 || hour >= 18
+      isNight ? activateDarkMode() : activateLightMode()
+  }
+  } else if (t == 'light') activateLightMode()
+  else activateDarkMode()
+
+} else if (autoChangeMode == '2'){
+  now = new Date();
+  hour = now.getHours();
+  isNight = hour < 6 || hour >= 18
+  if(t === undefined) isNight? activateDarkMode() : activateLightMode()
+  else if (t === 'light') activateLightMode()
+  else activateDarkMode() 
+} else {
+  if ( t == 'dark' ) activateDarkMode()
+  else if ( t == 'light') activateLightMode()
+}
+
+function activateDarkMode(){
+  document.documentElement.setAttribute('data-theme', 'dark')
+  if (document.querySelector('meta[name="theme-color"]') !== null){
+    document.querySelector('meta[name="theme-color"]').setAttribute('content','#000')
+  }
+}
+function activateLightMode(){
+  document.documentElement.setAttribute('data-theme', 'light')
+  if (document.querySelector('meta[name="theme-color"]') !== null){
+  document.querySelector('meta[name="theme-color"]').setAttribute('content','#fff')
+  }
+}</script><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@latest/css/font-awesome.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.css"><link rel="canonical" href="http://mao-jy.github.io/2020/07/03/ResNet/"><link rel="prev" title="《python深度学习》阅读记录（代码向） Part 2" href="http://mao-jy.github.io/2020/07/05/python-dl-reading-log-2/"><link rel="next" title="VGG" href="http://mao-jy.github.io/2020/07/02/VGG/"><script>var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "https://hm.baidu.com/hm.js?a7f76f8d587b417aa8c72343706a229e";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web"><script>var GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"search.xml","languages":{"hits_empty":"找不到您查询的内容:${query}"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"cookieDomain":"https://xxx/","msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"簡"},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  bookmark: {
+    message_prev: '按',
+    message_next: '键将本页加入书签'
+  },
+  runtime_unit: '天',
+  runtime: true,
+  copyright: {"languages":{"author":"作者: Jeff_M","link":"链接: ","source":"来源: Jeff_M","info":"著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。"}},
+  ClickShowText: undefined,
+  medium_zoom: false,
+  fancybox: true,
+  Snackbar: {"bookmark":{"message_prev":"按","message_next":"键将本页加入书签"},"chs_to_cht":"你已切换为繁体","cht_to_chs":"你已切换为简体","day_to_night":"你已切换为深色模式","night_to_day":"你已切换为浅色模式","bgLight":"#49b1f5","bgDark":"#2d3035","position":"bottom-left"},
+  baiduPush: false,
+  highlightCopy: true,
+  highlightLang: true,
+  highlightShrink: 'false',
+  isFontAwesomeV5: false,
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isanchor: true
+  
+}</script><link rel="stylesheet" href="/css/footer.min.css"><script>jsdelivr_url = "https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/"</script><script>var GLOBAL_CONFIG_SITE = { 
+  isPost: true,
+  isHome: false,
+  isSidebar: true  
+  }</script><noscript><style>
+#page-header {
+  opacity: 1
+}
+.justified-gallery img{
+  opacity: 1
+}
+</style></noscript><meta name="generator" content="Hexo 4.2.1"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><div id="mobile-sidebar"><div id="menu_mask"></div><div id="mobile-sidebar-menus"><div class="mobile_author_icon"><img class="avatar-img" src="/img/avatar.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="mobile_post_data"><div class="mobile_data_item is-center"><div class="mobile_data_link"><a href="/archives/"><div class="headline">文章</div><div class="length_num">10</div></a></div></div><div class="mobile_data_item is-center">      <div class="mobile_data_link"><a href="/tags/"><div class="headline">标签</div><div class="length_num">7</div></a></div></div><div class="mobile_data_item is-center">     <div class="mobile_data_link"><a href="/categories/"><div class="headline">分类</div><div class="length_num">3</div></a></div></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div></div></div></div><i class="fa fa-arrow-right on" id="toggle-sidebar" aria-hidden="true">     </i><div id="sidebar"><div class="sidebar-toc"><div class="sidebar-toc__title">目录</div><div class="sidebar-toc__progress"><span class="progress-notice">你已经读了</span><span class="progress-num">0</span><span class="progress-percentage">%</span><div class="sidebar-toc__progress-bar">     </div></div><div class="sidebar-toc__content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#概述"><span class="toc-number">1.</span> <span class="toc-text"> 概述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#网络详解"><span class="toc-number">2.</span> <span class="toc-text"> 网络详解</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#shortcut-connection"><span class="toc-number">2.1.</span> <span class="toc-text"> Shortcut Connection</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#残差块"><span class="toc-number">2.2.</span> <span class="toc-text"> 残差块</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#resnet"><span class="toc-number">2.3.</span> <span class="toc-text"> ResNet</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#resnet50的实现"><span class="toc-number">3.</span> <span class="toc-text"> ResNet50的实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#zero-pad"><span class="toc-number">3.1.</span> <span class="toc-text"> ZERO PAD</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#残差块-2"><span class="toc-number">3.2.</span> <span class="toc-text"> 残差块</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#avg-pool"><span class="toc-number">3.3.</span> <span class="toc-text"> AVG POOL</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#使用预训练"><span class="toc-number">3.4.</span> <span class="toc-text"> 使用预训练</span></a></li></ol></li></ol></div></div></div><div id="body-wrap"><div id="web_bg" data-type="photo"></div><div class="post-bg" id="nav" style="background-image: url(https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/07/03/ResNet/Shortcut_Connection.png)"><div id="page-header"><span class="pull_left" id="blog_name"><a class="blog_title" id="site-name" href="/">Jeff_M</a></span><span class="pull_right menus"><div id="search_button"><a class="site-page social-icon search"><i class="fa fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fa fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fa fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fa fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fa fa-link"></i><span> 友链</span></a></div></div><span class="toggle-menu close"><a class="site-page"><i class="fa fa-bars fa-fw" aria-hidden="true"></i></a></span></span></div><div id="post-info"><div id="post-title"><div class="posttitle">ResNet</div></div><div id="post-meta"><div class="meta-firstline"><time class="post-meta__date"><span class="post-meta__date-created" title="发表于 2020-07-03 20:20:45"><i class="fa fa-calendar" aria-hidden="true"></i> 发表于 2020-07-03</span><span class="post-meta__separator">|</span><span class="post-meta__date-updated" title="更新于 2020-07-04 21:36:23"><i class="fa fa-history" aria-hidden="true"></i> 更新于 2020-07-04</span></time><span class="post-meta__categories"><span class="post-meta__separator">|</span><i class="fa fa-inbox post-meta__icon" aria-hidden="true"></i><a class="post-meta__categories" href="/categories/%E6%A8%A1%E5%9E%8B%E8%A7%A3%E6%9E%90/">模型解析</a></span></div><div class="meta-secondline"> <span class="post-meta-wordcount"><i class="post-meta__icon fa fa-file-word-o" aria-hidden="true"></i><span>字数总计:</span><span class="word-count">1.1k</span><span class="post-meta__separator">|</span><i class="post-meta__icon fa fa-clock-o" aria-hidden="true"></i><span>阅读时长: 3 分钟</span></span></div><div class="meta-thirdline"><span class="post-meta-pv-cv"><span class="post-meta__separator">|</span><i class="fa fa-eye post-meta__icon" aria-hidden="true"> </i><span>阅读量:</span><span id="busuanzi_value_page_pv"></span></span><span class="post-meta-commentcount"></span></div></div></div></div><main class="layout_post" id="content-inner"><article id="post"><div class="post-content" id="article-container"><h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
+<p>AlexNet将卷积神经网络带入CV领域，VGG和GoogLeNet致力于加深卷积神经网络来提升模型的表现力，而当网络达到一定深度后，研究者们发现一味地加深并不能继续提升效果，反而会使得模型收敛困难，而且表现并不如浅层网络。下图是在CIFAR-10上分别训练20层和56层卷积神经网络地结果，无论在训练集还是测试集，更深的56层反而比20层表现更差，我们称之为网络退化，ResNet主要是为了解决这个问题被提出。</p>
+<p><img src="Network_Degradation.png" alt="Network Degradation" /></p>
+<p>ResNet提出于2015年，深度最大达到了前所未有的152层，一举获得了当年ILSVRC分类竞赛的冠军，达到了Top-5 3.57%的错误率。以ResNet为基础，何凯明团队还获取了当年的ILSVRC定位任务冠军和检测任务冠军，以及COCO数据集上的检测任务冠军和分割任务冠军。</p>
+<p>论文：<a href="https://arxiv.org/pdf/1512.03385.pdf" target="_blank" rel="noopener">Deep Residual Learning for Image Recognition</a></p>
+<p>代码实现：<a href="https://github.com/mao-jy/Model-Implementation/tree/master/ResNet50" target="_blank" rel="noopener">ResNet50</a></p>
+<h1 id="网络详解"><a class="markdownIt-Anchor" href="#网络详解"></a> 网络详解</h1>
+<h2 id="shortcut-connection"><a class="markdownIt-Anchor" href="#shortcut-connection"></a> Shortcut Connection</h2>
+<p>前面说过，同样的数据集上，56层的效果反而不如20层，说明多出来的36层不能进行恒等变换（即多个非线性变换的叠加不能近似于恒等变换），因此，我们需要提供这个恒等变换的可能，来防止网络退化的情况。</p>
+<p><img src="Shortcut_Connection.png" alt="Shortcut Connection" /></p>
+<p>上图所示为残差块的基本结构，在极端的情况下，需要恒等变换，这种结构会比多个非线性变换叠加更加容易拟合恒等映射。从另一个角度来看，由于“快捷连接”的存在，深层的特征图一定比浅层的特征图具有更加丰富的信息。按直觉来说relu放在相加前更容易拟合恒等变换（将参数全部置零即可），但是在这里却将relu放在了相加后，关于relu的位置问题在2016年ResNet v2的论文<a href="https://arxiv.org/pdf/1603.05027.pdf" target="_blank" rel="noopener">Identity Mappings in Deep Residual Networks</a>中会有相关讨论。</p>
+<h2 id="残差块"><a class="markdownIt-Anchor" href="#残差块"></a> 残差块</h2>
+<p>基于上述思想，作者给出了两种残差块的设计，如下图所示。如今特征提取常用的ResNet50和ResNet101都是用了下图右的结构，其中1×1卷积主要是为了降维和升维，以此减少计算量，因为中间的通道数小于两边的通道数，这种结构又被成为“瓶颈”结构。</p>
+<p><img src="Residual_Block.png" alt="Residual Block" /></p>
+<h2 id="resnet"><a class="markdownIt-Anchor" href="#resnet"></a> ResNet</h2>
+<p>将上述两种结构进行堆叠，就得到了ResNet，其中conv3_1，conv4_1，conv5_1的卷积步长为2，进行降采样，降采样的细节下面会介绍。具体参数如下表。</p>
+<p><img src="ResNet.png" alt="ResNet" /></p>
+<h1 id="resnet50的实现"><a class="markdownIt-Anchor" href="#resnet50的实现"></a> ResNet50的实现</h1>
+<p><img src="ResNet50.png" alt="ResNet50" /></p>
+<h2 id="zero-pad"><a class="markdownIt-Anchor" href="#zero-pad"></a> ZERO PAD</h2>
+<p>在网上许多博客与实现代码中，整个网络只有唯一的零填充（在上图的最开始位置），但在keras.application中的ResNet50，会在最大池化层之前加一层零填充，即stage 1的结构为：卷积-BN-ReLU-零填充-最大池化，不过这个无关紧要，加不加都可以。</p>
+<h2 id="残差块-2"><a class="markdownIt-Anchor" href="#残差块-2"></a> 残差块</h2>
+<p>残差块的具体实现有下面两种形式：</p>
+<p><img src="identity_block.png" alt="Identity Block" /></p>
+<p><img src="conv_block.png" alt="Convolutional Block" /></p>
+<p>下面给出两种残差块中卷积层的具体参数：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center"></th>
+<th style="text-align:center">Identity Block</th>
+<th style="text-align:center">Convolutional Block</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">1×1</td>
+<td style="text-align:center">strides: (1, 1), padding: valid</td>
+<td style="text-align:center">strides: (2, 2), padding: valid</td>
+</tr>
+<tr>
+<td style="text-align:center">3×3</td>
+<td style="text-align:center">strides: (1, 1), padding: same</td>
+<td style="text-align:center">strides: (1, 1), padding: same</td>
+</tr>
+<tr>
+<td style="text-align:center">1×1</td>
+<td style="text-align:center">strides: (1, 1), padding: valid</td>
+<td style="text-align:center">strides: (1, 1), padding: valid</td>
+</tr>
+<tr>
+<td style="text-align:center">shortcut</td>
+<td style="text-align:center">/</td>
+<td style="text-align:center">kernel_size: (1, 1) strides(2, 2) padding: valid</td>
+</tr>
+</tbody>
+</table>
+<h2 id="avg-pool"><a class="markdownIt-Anchor" href="#avg-pool"></a> AVG POOL</h2>
+<p>最后的AVG POOL是全局平均池化层，其实现代码为：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">x = Lambda(<span class="keyword">lambda</span> y: K.mean(y,axis=[<span class="number">1</span>,<span class="number">2</span>]),name=<span class="string">'avgpool'</span>)(x)    <span class="comment"># import keras.backend as K</span></span><br></pre></td></tr></table></figure>
+<p>达到的效果是将每一个特征图转换为一个值，如(7, 7, 2048)的特征图，经过全局平均池化层后就会变成(2048,)，后面不需要Flatten，直接与全连接层相连。</p>
+<h2 id="使用预训练"><a class="markdownIt-Anchor" href="#使用预训练"></a> 使用预训练</h2>
+<p>keras提供的预训练模型与自己写的模型结构不一定完全匹配，所以想要加载预训练模型最快捷的方式就是寻找出含有可训练参数的层，按照keras.applications.ResNet50的规范给它们命名，并在加载参数的时候执行下面的语句：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">model.load_weights(<span class="string">'resnet50.h5'</span>, by_name=<span class="literal">True</span>)    <span class="comment"># 加载同名层的参数，其他层不加载</span></span><br></pre></td></tr></table></figure>
+<p>ResNet50中含有可训练参数的层为所有卷积层和所有BN层。</p>
+</div><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">文章作者: </span><span class="post-copyright-info"><a href="mailto:undefined">Jeff_M</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">文章链接: </span><span class="post-copyright-info"><a href="http://mao-jy.github.io/2020/07/03/ResNet/">http://mao-jy.github.io/2020/07/03/ResNet/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来自 <a href="http://mao-jy.github.io" target="_blank">Jeff_M</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Deep-Learning/">Deep Learning</a><a class="post-meta__tags" href="/tags/CNN/">CNN</a><a class="post-meta__tags" href="/tags/CNN%E4%BA%94%E5%A4%A7%E7%BB%8F%E5%85%B8%E6%A8%A1%E5%9E%8B/">CNN五大经典模型</a></div><div class="post_share"><div class="social-share" data-image="/yolo.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css"/><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js"></script></div></div><div class="post-reward"><a class="reward-button button--primary button--animated"> <i class="fa fa-qrcode"></i> 打赏<div class="reward-main"><ul class="reward-all"><li class="reward-item"><img class="post-qr-code__img" src="/img/wechat.png" alt="微信"/><div class="post-qr-code__desc">微信</div></li><li class="reward-item"><img class="post-qr-code__img" src="/img/alipay.png" alt="支付宝"/><div class="post-qr-code__desc">支付宝</div></li></ul></div></a></div><nav class="pagination_post" id="pagination"><div class="prev-post pull_left"><a href="/2020/07/05/python-dl-reading-log-2/"><img class="prev_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/07/05/python-dl-reading-log-2/keras.png" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">《python深度学习》阅读记录（代码向） Part 2</div></div></a></div><div class="next-post pull_right"><a href="/2020/07/02/VGG/"><img class="next_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/07/02/VGG/VGG-16_20200702.png" onerror="onerror=null;src='/img/404.jpg'"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">VGG</div></div></a></div></nav><div class="relatedPosts"><div class="relatedPosts_headline"><i class="fa fa-fw fa-thumbs-up" aria-hidden="true"></i><span> 相关推荐</span></div><div class="relatedPosts_list"><div class="relatedPosts_item"><a href="/2020/06/27/AlexNet/" title="AlexNet"><img class="relatedPosts_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/06/27/AlexNet/AlexNet_Andrew_Ng_20200627.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2020-06-27</div><div class="relatedPosts_title">AlexNet</div></div></a></div><div class="relatedPosts_item"><a href="/2020/06/26/LeNet-5/" title="LeNet-5"><img class="relatedPosts_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/06/26/LeNet-5/LeNet_cover_20200626.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2020-06-26</div><div class="relatedPosts_title">LeNet-5</div></div></a></div><div class="relatedPosts_item"><a href="/2020/07/02/VGG/" title="VGG"><img class="relatedPosts_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/07/02/VGG/VGG-16_20200702.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2020-07-02</div><div class="relatedPosts_title">VGG</div></div></a></div><div class="relatedPosts_item"><a href="/2020/06/28/GoogLeNet/" title="GoogLeNet"><img class="relatedPosts_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/06/28/GoogLeNet/deeper_20200628.jpg"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2020-06-28</div><div class="relatedPosts_title">GoogLeNet</div></div></a></div><div class="relatedPosts_item"><a href="/2020/06/24/python-dl-reading-log-1/" title="《python深度学习》阅读记录（代码向） Part 1"><img class="relatedPosts_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/06/24/python-dl-reading-log-1/keras_20200624.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2020-06-24</div><div class="relatedPosts_title">《python深度学习》阅读记录（代码向） Part 1</div></div></a></div><div class="relatedPosts_item"><a href="/2020/07/05/python-dl-reading-log-2/" title="《python深度学习》阅读记录（代码向） Part 2"><img class="relatedPosts_cover" src="https://cdn.jsdelivr.net/gh/mao-jy/mao-jy.github.io/2020/07/05/python-dl-reading-log-2/keras.png"><div class="relatedPosts_main is-center"><div class="relatedPosts_date"><i class="fa fa-calendar fa-fw" aria-hidden="true"></i> 2020-07-05</div><div class="relatedPosts_title">《python深度学习》阅读记录（代码向） Part 2</div></div></a></div></div><div class="clear_both"></div></div><hr><div id="post-comment"><div class="comment_headling"><i class="fa fa-comments fa-fw" aria-hidden="true"></i><span> 评论</span></div><div class="vcomment" id="vcomment"></div><script src="https://cdn.jsdelivr.net/npm/valine/dist/Valine.min.js"></script><script>var requestSetting = function (from,set) {
+  var from = from
+  var setting = set.split(',').filter(function(item){
+  return from.indexOf(item) > -1
+  });
+  setting = setting.length == 0 ? from :setting;
+  return setting
+}
+
+var guestInfo = requestSetting(['nick','mail','link'],'nick,mail,link')
+var requiredFields = requestSetting(['nick','mail','link'],'nick,mail')
+
+window.valine = new Valine({
+  el:'#vcomment',
+  appId: 'DMLfYgnTzSS4iKM5wKyheHE8-gzGzoHsz',
+  appKey: 'B4g4Lha5hoOpOu75s8KrifQO',
+  notify: false,
+  verify: false,
+  placeholder: '欢迎评论~',
+  avatar: 'monsterid',
+  meta: guestInfo,
+  pageSize: '10',
+  lang: 'zh-CN',
+  recordIP: false,
+  serverURLs: '',
+  emojiCDN: '',
+  emojiMaps: "",
+  enableQQ: false,
+  requiredFields: requiredFields
+});</script></div></article></main><footer id="footer" data-type="color"><div id="footer-wrap"><div class="copyright">&copy;2020 By Jeff_M</div><div class="framework-info"><span>驱动 </span><a href="https://hexo.io" target="_blank" rel="noopener"><span>Hexo</span></a><span class="footer-separator">|</span><span>主题 </span><a href="https://github.com/jerryc127/hexo-theme-butterfly" target="_blank" rel="noopener"><span>Butterfly</span></a></div></div></footer></div><section class="rightside" id="rightside"><div id="rightside-config-hide"><i class="fa fa-book" id="readmode" title="阅读模式"></i><i class="fa fa-plus" id="font_plus" title="放大字体"></i><i class="fa fa-minus" id="font_minus" title="缩小字体"></i><a class="translate_chn_to_cht" id="translateLink" href="javascript:translatePage();" title="简繁转换" target="_self">繁</a><i class="darkmode fa fa-moon-o" id="darkmode" title="夜间模式"></i></div><div id="rightside-config-show"><div id="rightside_config" title="设置"><i class="fa fa-cog" aria-hidden="true"></i></div><a id="to_comment" href="#post-comment" title="直达评论"><i class="scroll_to_comment fa fa-comments">  </i></a><i class="fa fa-list-ul close" id="mobile-toc-button" title="目录" aria-hidden="true"></i><i class="fa fa-arrow-up" id="go-up" title="回到顶部" aria-hidden="true"></i></div></section><div class="search-dialog" id="local-search"><div class="search-dialog__title" id="local-search-title">本地搜索</div><div id="local-input-panel"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div></div><hr/><div id="local-search-results"><div id="local-hits"></div><div id="local-stats"><div class="local-search-stats__hr" id="hr"><span>由</span> <a href="https://github.com/wzpan/hexo-generator-search" target="_blank" rel="noopener" style="color:#49B1F5;">hexo-generator-search</a>
+ <span>提供支持</span></div></div></div><span class="search-close-button"><i class="fa fa-times"></i></span></div><div class="search-mask"></div><script src="https://cdn.jsdelivr.net/npm/jquery@latest/dist/jquery.min.js"></script><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/gh/wilq32/jqueryrotate/jQueryRotate.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@latest/dist/jquery.fancybox.min.js"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css"><script>$(function () {
+  $('span.katex-display').wrap('<div class="katex-wrap"></div>')
+})</script><script src="https://cdn.jsdelivr.net/npm/node-snackbar/dist/snackbar.min.js"></script><script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page@3/instantpage.min.js" type="module"></script><script src="/js/search/local-search.js"></script><script>var endLoading = function () {
+  document.body.style.overflow = 'auto';
+  document.getElementById('loading-box').classList.add("loaded")
+}
+window.addEventListener('load',endLoading)</script><script src="/js/jsdelivr.js"></script><script>if(){if(document.cookie.indexOf("user=new")==-1){Snackbar.show({duration: , text: "", width: 'auto', pos: 'top-center'});var t=new Date(new Date().getTime()+1000*60*60*);document.cookie="user=new; expires="+t.toGMTString();}}</script></body></html>
